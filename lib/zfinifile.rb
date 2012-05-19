@@ -50,13 +50,14 @@ class ZFIniFile
 		@encoding = opts.fetch(:encoding, nil)
 		@inheritance = opts.fetch(:inheritance, ':')
 		@ini = Hash.new { |h,k| h[k] = Hash.new }
+		@inihash = Hash.new { |h,k| h[k] = Hash.new }
 		@inheritsfrom = Hash.new { |h,k| h[k] = [] }
 
 		@rgxp_comment = %r/\A\s*\z|\A\s*[#{@comment}]/
 		@rgxp_section = %r/\A\s*\[([^\]]+)\]/
 		@rgxp_param   = %r/[^\\]#{@param}/
 
-		parse
+		parsefile
 	end
 
 	#
@@ -70,7 +71,44 @@ class ZFIniFile
 		@ini[section]
 	end
 
+	def get_hash
+		@inihash
+	end
+
 	private
+
+	def parsefile
+		return unless File.file?(@fn)
+
+		@_current_section = nil
+
+		fd = (RUBY_VERSION >= '1.9' && @encoding) ?
+			File.open(@fn, 'r', :encoding => @encoding) :
+			File.open(@fn, 'r')
+
+		while line = fd.gets
+			line = line.chomp
+
+			if line =~ @rgxp_comment
+				next
+			end
+
+			if line =~ @rgxp_section
+				section = $1.split("#{@inheritance}")
+				inheritsFrom = nil
+				if section.length == 2
+					inheritsFrom = section[1].strip
+				end
+				@_current_section = @inihash[section[0].strip]
+				@_current_section[:inherits] = inheritsFrom
+				@_current_section[:params] = {}
+				next
+			end
+		end
+	ensure
+		fd.close if defined? fd and fd
+		@_current_section = nil
+	end
 
 	# Parse tge ini file contents.
 	#
