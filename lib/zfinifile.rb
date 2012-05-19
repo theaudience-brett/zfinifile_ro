@@ -81,6 +81,7 @@ class ZFIniFile
 		return unless File.file?(@fn)
 
 		@_current_section = nil
+		@_section_name = nil
 
 		fd = (RUBY_VERSION >= '1.9' && @encoding) ?
 			File.open(@fn, 'r', :encoding => @encoding) :
@@ -99,12 +100,16 @@ class ZFIniFile
 				if section.length == 2
 					inheritsFrom = section[1].strip
 				end
+				@_section_name = section[0].strip
 				@_current_section = @inihash[section[0].strip]
 				@_current_section[:inherits] = inheritsFrom
 				@_current_section[:params] = {}
 				next
 			end
+
+			get_properties line
 		end
+
 	ensure
 		fd.close if defined? fd and fd
 		@_current_section = nil
@@ -166,4 +171,20 @@ class ZFIniFile
 		@_current_section[param.strip] = value.strip.gsub(/["']/, '')
 	end
 
+	def get_properties( line )
+		param, value = line.split("#{@param}")
+		
+		curGroup = @_current_section[:params]
+		param = param.split('.')
+		param.each_with_index do |p, index|
+			p = p.strip
+			if index == param.size - 1
+				curGroup[p] = value.strip
+			else
+				curGroup[p] = {} unless curGroup.has_key?(p)
+				curGroup = curGroup[p]
+			end
+		end
+
+	end
 end
