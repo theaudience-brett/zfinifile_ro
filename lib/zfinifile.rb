@@ -179,7 +179,13 @@ class ZFIniFile
 		param.each_with_index do |p, index|
 			p = p.strip
 			if index == param.size - 1
-				curGroup[p] = value.strip
+				if p =~ %r/\[\]$/
+					p = p[0..-3] 
+					curGroup[p] = [] unless curGroup.has_key?(p)
+					curGroup[p].unshift(value.strip)
+				else
+					curGroup[p] = value.strip
+				end
 			else
 				curGroup[p] = {} unless curGroup.has_key?(p)
 				curGroup = curGroup[p]
