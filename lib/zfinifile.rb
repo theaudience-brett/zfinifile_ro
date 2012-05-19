@@ -172,8 +172,10 @@ class ZFIniFile
 	end
 
 	def get_properties( line )
+		return unless @_section_name == "production"
 		param, value = line.split("#{@param}")
-		
+		value = value.strip[1..-2] if value.strip =~ %r/^"(.*)"|'(.*)'$/
+
 		curGroup = @_current_section[:params]
 		param = param.split('.')
 		param.each_with_index do |p, index|
@@ -182,9 +184,9 @@ class ZFIniFile
 				if p =~ %r/\[\]$/
 					p = p[0..-3] 
 					curGroup[p] = [] unless curGroup.has_key?(p)
-					curGroup[p].unshift(value.strip)
+					curGroup[p].unshift(value)
 				else
-					curGroup[p] = value.strip
+					curGroup[p] = value
 				end
 			else
 				curGroup[p] = {} unless curGroup.has_key?(p)
